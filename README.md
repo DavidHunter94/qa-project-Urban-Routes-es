@@ -5,12 +5,13 @@ Este repositorio contiene una prueba automática  para la aplicación web **Urba
 
 Pruebas realizadas
 
-1. **Definir la ruta:** ingresa las direcciones de origen y destino.
-2. **Solicitar un taxi** y elegir la tarifa **Comfort**.
-3. **Verificar el número de teléfono** introducir el código de confirmación
-4. **Agregar una tarjeta de crédito**.
-5. **Enviar un mensaje** al conductor.
-6. Solicitar los extras **“Manta y pañuelos”** y **dos helados**.
+- Selección de origen y destino
+- Selección de tarifa Comfort
+- Ingreso y validación del número de teléfono
+- Registro de una tarjeta de crédito
+- Envío de un mensaje al conductor
+- Solicitud de manta, pañuelos y 2 helados
+- Confirmación de solicitud de taxi
 
 ## Requisitos
 
