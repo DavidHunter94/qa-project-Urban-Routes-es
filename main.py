@@ -46,6 +46,7 @@ class UrbanRoutesPage:
     plus_helado = (By.XPATH, "//div[text()='Helado']/following-sibling::div//div[contains(@class,'counter-plus')]")
     message_field = (By.ID, "comment")
     boton_pedir_taxi_final = (By.CSS_SELECTOR, "button.smart-button")
+    modal_conductor_llegara = (By.CLASS_NAME, "order-header-content")  # <- Agregado aquí
 
     def __init__(self, driver: webdriver.Chrome):
         self.driver = driver
@@ -142,6 +143,12 @@ class UrbanRoutesPage:
         self.driver.execute_script("arguments[0].scrollIntoView(true);", boton)
         self.driver.execute_script("arguments[0].click();", boton)
 
+    def wait_for_driver_modal(self) -> None:
+        WebDriverWait(self.driver, 30).until(
+            EC.visibility_of_element_located(self.modal_conductor_llegara)
+        )
+
+# TESTS
 
 class TestUrbanRoutes:
     driver: webdriver.Chrome
@@ -151,49 +158,66 @@ class TestUrbanRoutes:
         opts = Options()
         opts.set_capability("goog:loggingPrefs", {"performance": "ALL"})
         cls.driver = webdriver.Chrome(options=opts)
+        cls.page = UrbanRoutesPage(cls.driver)
+        cls.driver.get(data.urban_routes_url)
 
-    def test_full_flow(self) -> None:
-        page = UrbanRoutesPage(self.driver)
+    def test_set_route(self):
+        self.page.set_route(data.address_from, data.address_to)
+        assert self.page.get_from() == data.address_from
+        assert self.page.get_to() == data.address_to
 
-        # Abrir la página
-        self.driver.get(data.urban_routes_url)
+    def test_select_plan(self):
+        self.page.click_taxi_button()
+        self.page.select_comfort_tariff()
+        selected_tariff = self.driver.find_element(By.CSS_SELECTOR, ".tcard.active .tcard-title")
+        assert selected_tariff.text.strip() == "Comfort"
 
-        # Establecer ruta (origen y destino)
-        page.set_route(data.address_from, data.address_to)
-        assert page.get_from() == data.address_from
-        assert page.get_to() == data.address_to
+    def test_fill_phone_number(self):
+        self.page.fill_phone_and_verify()
+        # Confirmar que desapareció el modal de verificación
+        assert WebDriverWait(self.driver, 10).until(
+            EC.invisibility_of_element_located((By.CSS_SELECTOR, ".section.active"))
+        )
 
-        # Pedir un taxi y seleccionar tarifa Comfort
-        page.click_taxi_button()
-        page.select_comfort_tariff()
+    def test_fill_credit_card(self):
+        self.page.fill_credit_card()
+        assert WebDriverWait(self.driver, 10).until(
+            EC.invisibility_of_element_located((By.CSS_SELECTOR, ".section.active"))
+        )
 
-        # Ingresar número de teléfono y verificar con el código recibido
-        page.fill_phone_and_verify()
+    def test_comment_for_driver(self):
+        self.page.write_driver_message()
+        # Confirmar que el comentario se escribió correctamente
+        comentario = self.driver.find_element(By.ID, "comment")
+        assert data.message_for_driver in comentario.get_attribute("value")
 
-        # Agregar una tarjeta de crédito
-        page.fill_credit_card()
+    def test_order_blanket_and_handkerchiefs(self):
+        self.page.request_blanket_and_tissues()
+        switch = self.driver.find_element(By.XPATH, "//div[text()='Manta y pañuelos']/following-sibling::div//input[@type='checkbox']")
+        assert switch.is_selected() == True
 
-        # Escribir mensaje para el conductor
-        page.write_driver_message()
+    def test_order_2_ice_creams(self):
+        self.page.request_ice_creams(2)
+        contador_helados = self.driver.find_element(By.XPATH, "//div[text()='Helado']/following-sibling::div//div[contains(@class,'counter-value')]")
+        assert contador_helados.text.strip() == "2"
 
-        # Pedir manta y pañuelos
-        page.request_blanket_and_tissues()
+    def test_car_search_model_appears(self):
+        self.page.click_final_taxi_button()
 
-        # Pedir dos helados
-        page.request_ice_creams(2)
+        # Esperar que aparezca el contenedor del modal
+        WebDriverWait(self.driver, 30).until(
+            EC.visibility_of_element_located((By.CLASS_NAME, "order-header-content"))
+        )
 
-        # Confirmar el pedido de taxi
-        page.click_final_taxi_button()
+        # Esperar hasta que el título cambie a "El conductor llegará"
+        WebDriverWait(self.driver, 30).until(
+            EC.text_to_be_present_in_element((By.CLASS_NAME, "order-header-title"), "El conductor llegará")
+        )
 
-        # Verificar si aparece el modal de búsqueda de taxi
-        try:
-            modal = WebDriverWait(self.driver, 30).until(
-                EC.visibility_of_element_located((By.CSS_SELECTOR, ".order-searching"))
-            )
-            assert modal.is_displayed()
-        except TimeoutException:
-            pass
-        
+        # Confirmar que el texto correcto ya apareció
+        title = self.driver.find_element(By.CLASS_NAME, "order-header-title")
+        assert "El conductor llegará" in title.text
+
     @classmethod
     def teardown_class(cls) -> None:
         cls.driver.quit()
