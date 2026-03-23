@@ -1,6 +1,6 @@
 # Urban Routes – Automatización QA con Selenium
 
-Proyecto de automatización de pruebas UI para la aplicación web **Urban Routes**, desarrollado como parte del Sprint 8 del Bootcamp de QA de TripleTen.
+Proyecto de automatización de pruebas UI para la aplicación web **Urban Routes**, desarrollado como parte del Sprint 9 del Bootcamp de QA de TripleTen.
 
 Valida que en un flujo completo el usuario pueda solicitar un taxi, registrar su teléfono, agregar método de pago y solicitar extras — todo sin errores.
 
